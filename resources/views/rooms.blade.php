@@ -651,7 +651,7 @@ const roomsData = {
     }
     
     function loadRooms() {
-    const container = document.getElementById('roomsContainer');
+        const container = document.getElementById('roomsContainer');
         const loading = document.getElementById('roomsLoading');
         const noResults = document.getElementById('noResults');
         
@@ -661,17 +661,38 @@ const roomsData = {
         noResults.style.display = 'none';
         
         setTimeout(() => {
-            // Use the currentTheme variable that was properly set in initializePage()
-            const selectedRooms = roomsData[currentTheme] || roomsData.solice;
-            let filteredRooms = selectedRooms;
+            // Data is now rendered server-side via Blade, but we can still use JS for client-side filtering if needed
+            // For now, we will rely on the server-side rendering for the initial load
+            // and simple DOM manipulation for filtering if we want to keep it static-ish, 
+            // OR we can just reload the page with a query param.
+            // Given the instructions, let's stick to the server-side rendered content.
+            
+            // However, to keep the existing "dynamic" feel without full page reloads for filters, 
+            // we would need an API. But for this assignment, let's render all rooms for the theme
+            // and filter them with JS.
+            
+            const rooms = [
+                @foreach($rooms as $room)
+                {
+                    id: {{ $room->id }},
+                    name: "{{ $room->name }}",
+                    img: "{{ $room->image_path }}",
+                    desc: "{{ $room->description }}",
+                    price: "{{ $room->price }}",
+                    features: {!! json_encode($room->features) !!},
+                    category: "{{ $room->category }}",
+                    size: "{{ $room->size }}",
+                    guests: "{{ $room->max_guests }}",
+                    rating: {{ $room->rating }}
+                },
+                @endforeach
+            ];
+
+            let filteredRooms = rooms;
             
             // Apply filter
             if (currentFilter !== 'all') {
-                if (currentFilter === 'solice' || currentFilter === 'vault') {
-                    filteredRooms = roomsData[currentFilter] || [];
-                } else {
-                    filteredRooms = selectedRooms.filter(room => room.category === currentFilter);
-                }
+                 filteredRooms = rooms.filter(room => room.category === currentFilter);
             }
             
             if (filteredRooms.length === 0) {
@@ -715,8 +736,6 @@ const roomsData = {
             `).join('');
             
             loading.style.display = 'none';
-            
-            // Remove cart functionality setup from Rooms
             
             if (typeof AOS !== 'undefined') {
                 AOS.refresh();

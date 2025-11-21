@@ -207,7 +207,21 @@
             </div>
         </div>
     </div>
+    </div>
 </section>
+
+<!-- Notification Container -->
+<div id="bookingNotification" class="booking-notification">
+    <div class="notification-content">
+        <div class="notification-icon">
+            <i class="bi bi-exclamation-circle"></i>
+        </div>
+        <div class="notification-text">
+            <h5 class="notification-title">Notification</h5>
+            <p class="notification-message">Message goes here</p>
+        </div>
+    </div>
+</div>
 
 <style>
 /* Booking Hero Section */
@@ -1256,6 +1270,15 @@ document.addEventListener('DOMContentLoaded', function() {
         proceedToCartBtn.addEventListener('click', (e) => {
             e.preventDefault();
             saveCartData();
+            
+            // Check if cart is empty
+            const cart = JSON.parse(localStorage.getItem('bookingCart') || '[]');
+            if (cart.length === 0) {
+                showNotification('Cart is Empty', 'Please select at least one room to proceed.');
+                showStep(2); // Go back to room selection
+                return;
+            }
+
             // Save personal info to localStorage
             const formData = new FormData(form);
             const personalInfo = {
@@ -1313,24 +1336,8 @@ document.addEventListener('DOMContentLoaded', function() {
         
         function loadRoomOptions(theme) {
             const roomOptions = document.getElementById('roomOptions');
-            const roomsData = {
-                solice: [
-                    { name: 'Solice Grand Suite', price: '$420', priceDisplay: '$420/night', category: 'Suite', desc: 'Airy suite bathed in natural light with serene neutrals.', features: ['Ocean View','Private Balcony','Terrace Daybed Lounge'], img: '/images/solicesuite1.jpg' },
-                    { name: 'Solice Skyline Suite', price: '$390', priceDisplay: '$390/night', category: 'Suite', desc: 'Minimalist luxury with panoramic city views.', features: ['City View','Mini Bar','Soundproof Serenity Design'], img: '/images/solicesuite2.jpg' },
-                    { name: 'Solice Horizon Penthouse', price: '$680', priceDisplay: '$680/night', category: 'Penthouse', desc: 'Top-floor tranquility with expansive terrace.', features: ['Terrace','Atrium','Private Infinity Pool'], img: '/images/solicepenthouse1.jpg' },
-                    { name: 'Solice Garden Penthouse', price: '$650', priceDisplay: '$650/night', category: 'Penthouse', desc: 'Indoor-outdoor living with lush greenery.', features: ['Garden View','Private Pool','Private Garden Patio'], img: '/images/solicepenthouse2.jpg' },
-                    { name: 'Solice Serenity Room', price: '$220', priceDisplay: '$220/night', category: 'Room', desc: 'Calm, elegant room for a restful stay.', features: ['Personal Dining','Daybed','Aromatherapy Diffuser'], img: '/images/soliceroom1.jpg' },
-                    { name: 'Solice Deluxe Room', price: '$250', priceDisplay: '$250/night', category: 'Room', desc: 'Light-filled room with soft tones and refined finishes.', features: ['City View','Rain Shower','Smart Mirror Display'], img: '/images/soliceroom2.jpg' }
-                ],
-                vault: [
-                    { name: 'Vault Royal Suite', price: '$520', priceDisplay: '$520/night', category: 'Suite', desc: 'Dark marble and gold accents for a dramatic stay.', features: ['Skyline View','Private Bar','Jacuzzi'], img: '/images/vaultsuite1.jpg' },
-                    { name: 'Vault Noir Suite', price: '$490', priceDisplay: '$490/night', category: 'Suite', desc: 'Sophisticated lighting and premium leather finishes.', features:  ['City View','Mini Bar','Onyx Bath'], img: '/images/vaultsuite2.jpg' },
-                    { name: 'Vault Crown Penthouse', price: '$820', priceDisplay: '$820/night', category: 'Penthouse', desc: 'Premier penthouse with expansive skyline terrace.', features: ['Private Cinema','Jacuzzi','Smart Glass Walls'], img: '/images/vaultpenthouse1.jpg' },
-                    { name: 'Vault Obsidian Penthouse', price: '$780', priceDisplay: '$780/night', category: 'Penthouse', desc: 'Ultra-sleek penthouse wrapped in dark glass.', features: ['Skyline View','Heated Marble Floors','Private Bar'], img: '/images/vaultpenthouse2.jpg' },
-                    { name: 'Vault Executive Room', price: '$280', priceDisplay: '$280/night', category: 'Room', desc: 'Elegant room with rich textures and smart lighting.', features: ['Marble Vanity','Ambient Mood Lighting','Rain Shower'], img: '/images/vaultroom1.jpg' },
-                    { name: 'Vault Signature Room', price: '$300', priceDisplay: '$300/night', category: 'Room', desc: 'Refined materials and a moody, luxurious palette.', features: ['Crystal Glassware','City View','Automated Ambience'], img: '/images/vaultroom2.jpg' }
-                ]
-            };
+            // Dynamic data from controller
+            const roomsData = {!! json_encode($roomsData) !!};
             
             const selectedRooms = roomsData[theme] || roomsData.solice;
             
@@ -1454,6 +1461,20 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             summary.innerHTML = summaryHTML;
+        }
+        
+        function showNotification(title, message) {
+            const notification = document.getElementById('bookingNotification');
+            if (!notification) return;
+            
+            notification.querySelector('.notification-title').textContent = title;
+            notification.querySelector('.notification-message').textContent = message;
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
         }
         
         // Initialize - show step 1

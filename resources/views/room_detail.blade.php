@@ -87,35 +87,16 @@ document.addEventListener('DOMContentLoaded', function() {
     document.body.setAttribute('data-theme', currentTheme);
 
     // Dataset (aligned with rooms page)
-    const roomsData = {
-        solice: [
-            { name: 'Solice Grand Suite', img: '/images/solicesuite1.jpg', desc: 'Airy suite bathed in natural light with serene neutrals.', price: '$420/night', category: 'Suite', features: ['Ocean View','Private Balcony','Terrace Daybed Lounge'] },
-            { name: 'Solice Skyline Suite', img: '/images/solicesuite2.jpg', desc: 'Minimalist luxury with panoramic city views.', price: '$390/night', category: 'Suite', features: ['City View','Mini Bar','Soundproof Serenity Design'] },
-            { name: 'Solice Horizon Penthouse', img: '/images/solicepenthouse1.jpg', desc: 'Top-floor tranquility with expansive terrace.', price: '$680/night', category: 'Penthouse', features: ['Terrace','Atrium','Private Infinity Pool'] },
-            { name: 'Solice Garden Penthouse', img: '/images/solicepenthouse2.jpg', desc: 'Indoor-outdoor living with lush greenery.', price: '$650/night', category: 'Penthouse', features: ['Garden View','Private Pool','Private Garden Patio'] },
-            { name: 'Solice Serenity Room', img: '/images/soliceroom1.jpg', desc: 'Calm, elegant room for a restful stay.', price: '$220/night', category: 'Room', features: ['Personal Dining','Daybed','Aromatherapy Diffuser'] },
-            { name: 'Solice Deluxe Room', img: '/images/soliceroom2.jpg', desc: 'Light-filled room with soft tones and refined finishes.', price: '$250/night', category: 'Room', features: ['City View','Rain Shower','Smart Mirror Display'] }
-        ],
-        vault: [
-            { name: 'Vault Royal Suite', img: '/images/vaultsuite1.jpg', desc: 'Dark marble and gold accents for a dramatic stay.', price: '$520/night', category: 'Suite', features: ['Skyline View','Private Bar','Jacuzzi'] },
-            { name: 'Vault Noir Suite', img: '/images/vaultsuite2.jpg', desc: 'Sophisticated lighting and premium leather finishes.', price: '$490/night', category: 'Suite', features: ['City View','Mini Bar','Onyx Bath'] },
-            { name: 'Vault Crown Penthouse', img: '/images/vaultpenthouse1.jpg', desc: 'Premier penthouse with expansive skyline terrace.', price: '$820/night', category: 'Penthouse', features: ['Private Cinema','Jacuzzi','Smart Glass Walls'] },
-            { name: 'Vault Obsidian Penthouse', img: '/images/vaultpenthouse2.jpg', desc: 'Ultra-sleek penthouse wrapped in dark glass.', price: '$780/night', category: 'Penthouse', features: ['Skyline View','Heated Marble Floors','Private Bar'] },
-            { name: 'Vault Executive Room', img: '/images/vaultroom1.jpg', desc: 'Elegant room with rich textures and smart lighting.', price: '$280/night', category: 'Room', features: ['Marble Vanity','Ambient Mood Lighting','Rain Shower'] },
-            { name: 'Vault Signature Room', img: '/images/vaultroom2.jpg', desc: 'Refined materials and a moody, luxurious palette.', price: '$300/night', category: 'Room', features: ['Crystal Glassware','City View','Automated Ambience'] }
-        ]
+    // Dataset (aligned with rooms page)
+    // We are now using server-side data passed to the view
+    const room = {
+        name: "{{ $room->name }}",
+        img: "{{ $room->image_path }}",
+        desc: "{{ $room->description }}",
+        price: "{{ $room->price }}",
+        category: "{{ ucfirst($room->category) }}",
+        features: {!! json_encode($room->features) !!}
     };
-
-    const params = new URLSearchParams(window.location.search);
-    const name = params.get('name');
-    const theme = currentTheme === 'vault' ? 'vault' : 'solice';
-    const pool = roomsData[theme].concat(roomsData[theme === 'vault' ? 'solice' : 'vault']);
-
-    let room = pool.find(r => r.name === name);
-    if (!room) {
-        // fallback: first room
-        room = roomsData[theme][0];
-    }
 
     const img = document.getElementById('roomImage');
     const title = document.getElementById('roomTitle');

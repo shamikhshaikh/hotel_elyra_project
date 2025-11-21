@@ -1556,6 +1556,18 @@ function showMainContent(theme) {
     // Update theme-specific content
     updateThemeContent(theme);
     
+    // Update Admin Button Href with current theme
+    const adminBtn = document.getElementById('adminHeroBtn');
+    if (adminBtn) {
+        adminBtn.href = `{{ url('/admin/rooms') }}?theme=${theme}`;
+    }
+    
+    // Explicitly update the Header Admin Link
+    const headerAdminLink = document.getElementById('adminNavLink');
+    if (headerAdminLink) {
+        headerAdminLink.href = `{{ url('/admin/rooms') }}?theme=${theme}`;
+    }
+    
     // Trigger theme change event for other pages
     window.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme } }));
 }

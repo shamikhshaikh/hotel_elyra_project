@@ -13,13 +13,23 @@
     <script>
     (function(){
         try {
-            // Get saved theme from localStorage
-            var t = localStorage.getItem('theme');
-            if (t) {
+            // Check URL parameter first
+            var urlTheme = new URLSearchParams(window.location.search).get('theme');
+            var savedTheme = localStorage.getItem('theme');
+            
+            // Determine theme: URL > Saved > Default
+            var theme = urlTheme || savedTheme;
+            
+            if (theme) {
+                // If URL has theme, save it to localStorage for future persistence
+                if (urlTheme) {
+                    localStorage.setItem('theme', urlTheme);
+                }
+                
                 // Apply theme to document element immediately
-                document.documentElement.setAttribute('data-theme', t);
+                document.documentElement.setAttribute('data-theme', theme);
                 document.addEventListener('DOMContentLoaded', function(){
-                    document.body && document.body.setAttribute('data-theme', t);
+                    document.body && document.body.setAttribute('data-theme', theme);
                 });
             }
         } catch (e) {}
