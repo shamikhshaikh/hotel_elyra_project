@@ -735,25 +735,62 @@ class HotelCheckout {
         }
     }
 
-    processBooking() {
+    async processBooking() {
         const submitBtn = document.querySelector('button[type="submit"]');
         const originalText = submitBtn.innerHTML;
         
         submitBtn.innerHTML = '<span class="loading"></span> Processing...';
         submitBtn.disabled = true;
-        
-        // Simulate booking processing
-        setTimeout(() => {
-            submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Booking Confirmed!';
-            submitBtn.classList.add('btn-success');
-            
-            // Show success notification
-            this.showNotification('Booking confirmed! You will receive a confirmation email shortly.', 'success');
-            
-            // Clear booking dates and redirect
-            localStorage.removeItem('bookingDates');
-            window.location.href = '/';
-        }, 2000);
+
+        try {
+            // Gather data
+            const form = document.getElementById('checkoutForm');
+            const formData = new FormData(form);
+            const cart = JSON.parse(localStorage.getItem('bookingCart') || '[]');
+
+            const payload = {
+                first_name: formData.get('first_name'),
+                last_name: formData.get('last_name'),
+                email: formData.get('email'),
+                phone: formData.get('phone'),
+                cart: cart
+            };
+
+            // Send to backend
+            const response = await fetch('/booking', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                },
+                body: JSON.stringify(payload)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                submitBtn.innerHTML = '<i class="bi bi-check-circle me-2"></i>Booking Confirmed!';
+                submitBtn.classList.add('btn-success');
+                
+                this.showNotification('Booking confirmed! You will receive a confirmation email shortly.', 'success');
+                
+                // Clear booking data
+                localStorage.removeItem('bookingCart');
+                localStorage.removeItem('bookingDates');
+                localStorage.removeItem('bookingPersonalInfo');
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+            } else {
+                throw new Error(result.message || 'Booking failed');
+            }
+        } catch (error) {
+            console.error('Booking Error:', error);
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+            this.showNotification(error.message || 'Something went wrong. Please try again.', 'error');
+        }
     }
 
     showNotification(message, type) {

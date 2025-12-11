@@ -44,6 +44,26 @@
     </div>
 </section>
 
+<!-- Search Section -->
+<section class="search-section py-3" style="background: var(--current-primary);">
+    <div class="container">
+        <div class="row justify-content-center">
+            <div class="col-lg-6 position-relative">
+                <div class="input-group">
+                    <span class="input-group-text" style="background: var(--current-secondary); border-color: var(--current-accent); color: var(--current-gold);">
+                        <i class="bi bi-search"></i>
+                    </span>
+                    <input type="text" id="publicRoomSearch" class="form-control" placeholder="Search for a room or suite..." 
+                        style="background: var(--current-secondary); border-color: var(--current-accent); color: var(--current-text); height: 50px;">
+                </div>
+                <div id="publicSearchResults" class="position-absolute w-100 shadow-lg mt-2" 
+                    style="display: none; z-index: 1000; background: var(--current-secondary); border: 1px solid var(--current-gold); border-radius: 10px; overflow: hidden; max-height: 300px; overflow-y: auto;">
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
 <!-- Filter Section -->
 <section class="filter-section py-4">
     <div class="container">
@@ -60,7 +80,7 @@
                         <i class="bi bi-buildings me-2"></i>Penthouses
                     </button>
                     <button class="filter-tab" data-filter="standard">
-                        <i class="bi bi-door-open me-2"></i>Rooms
+                        <i class="bi bi-door-open me-2"></i>Standard
                     </button>
                 </div>
             </div>
@@ -555,6 +575,52 @@
     flex-shrink: 0;
 }
 
+/* Search Results Styling */
+.search-result-item {
+    padding: 10px 15px;
+    border-bottom: 1px solid var(--current-accent);
+    cursor: pointer;
+    transition: background 0.2s ease;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: var(--current-text);
+}
+
+.search-result-item:last-child {
+    border-bottom: none;
+}
+
+.search-result-item:hover {
+    background: var(--current-accent);
+    color: var(--current-gold);
+}
+
+.search-result-item img {
+    width: 50px;
+    height: 50px;
+    object-fit: cover;
+    border-radius: 5px;
+    margin-right: 15px;
+}
+
+/* Vault Theme Search Fixes */
+[data-theme="vault"] #publicRoomSearch::placeholder {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
+[data-theme="vault"] #publicRoomSearch {
+    color: #ffffff !important;
+}
+
+[data-theme="vault"] #noResults {
+    color: #ffffff !important;
+}
+
+[data-theme="vault"] #noResults .text-muted {
+    color: rgba(255, 255, 255, 0.7) !important;
+}
+
 .rooms-notification .notification-text {
     flex: 1;
 }
@@ -651,7 +717,7 @@ const roomsData = {
     }
     
     function loadRooms() {
-    const container = document.getElementById('roomsContainer');
+        const container = document.getElementById('roomsContainer');
         const loading = document.getElementById('roomsLoading');
         const noResults = document.getElementById('noResults');
         
@@ -661,17 +727,38 @@ const roomsData = {
         noResults.style.display = 'none';
         
         setTimeout(() => {
-            // Use the currentTheme variable that was properly set in initializePage()
-            const selectedRooms = roomsData[currentTheme] || roomsData.solice;
-            let filteredRooms = selectedRooms;
+            // Data is now rendered server-side via Blade, but we can still use JS for client-side filtering if needed
+            // For now, we will rely on the server-side rendering for the initial load
+            // and simple DOM manipulation for filtering if we want to keep it static-ish, 
+            // OR we can just reload the page with a query param.
+            // Given the instructions, let's stick to the server-side rendered content.
+            
+            // However, to keep the existing "dynamic" feel without full page reloads for filters, 
+            // we would need an API. But for this assignment, let's render all rooms for the theme
+            // and filter them with JS.
+            
+            const rooms = [
+                @foreach($rooms as $room)
+                {
+                    id: {{ $room->id }},
+                    name: "{{ $room->name }}",
+                    img: "{{ $room->image_path }}",
+                    desc: "{{ $room->description }}",
+                    price: "{{ $room->price }}",
+                    features: {!! json_encode($room->features) !!},
+                    category: "{{ $room->category }}",
+                    size: "{{ $room->size }}",
+                    guests: "{{ $room->max_guests }}",
+                    rating: {{ $room->rating }}
+                },
+                @endforeach
+            ];
+
+            let filteredRooms = rooms;
             
             // Apply filter
             if (currentFilter !== 'all') {
-                if (currentFilter === 'solice' || currentFilter === 'vault') {
-                    filteredRooms = roomsData[currentFilter] || [];
-                } else {
-                    filteredRooms = selectedRooms.filter(room => room.category === currentFilter);
-                }
+                 filteredRooms = rooms.filter(room => room.category === currentFilter);
             }
             
             if (filteredRooms.length === 0) {
@@ -702,7 +789,7 @@ const roomsData = {
                                 </small>
                             </div>
                             <div class="features mb-3">
-                                ${room.features.map(feature => `<span class="feature-tag">${feature}</span>`).join('')}
+                                ${(room.features || []).map(feature => `<span class="feature-tag">${feature}</span>`).join('')}
                             </div>
                             <div class="room-actions">
                                 <a href="/booking?theme=${encodeURIComponent(currentTheme)}" class="btn btn-primary">
@@ -715,8 +802,6 @@ const roomsData = {
             `).join('');
             
             loading.style.display = 'none';
-            
-            // Remove cart functionality setup from Rooms
             
             if (typeof AOS !== 'undefined') {
                 AOS.refresh();
@@ -739,6 +824,69 @@ const roomsData = {
                 // Reload rooms
                 loadRooms();
             });
+        });
+    }
+
+    // Public Ajax Search Logic
+    const searchInput = document.getElementById('publicRoomSearch');
+    const searchResults = document.getElementById('publicSearchResults');
+
+    if (searchInput) {
+        let timeout = null;
+
+        searchInput.addEventListener('keyup', function() {
+            clearTimeout(timeout);
+            const query = this.value;
+            // Use the global currentTheme variable
+            
+            if (query.length < 1) {
+                searchResults.style.display = 'none';
+                return;
+            }
+
+            // Debounce
+            timeout = setTimeout(() => {
+                fetch(`{{ route('rooms.search') }}?query=${encodeURIComponent(query)}&theme=${currentTheme}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        searchResults.innerHTML = '';
+                        
+                        if (data.length > 0) {
+                            data.forEach(room => {
+                                const item = document.createElement('a');
+                                // Link to room detail page
+                                item.href = `{{ url('/room') }}?name=${encodeURIComponent(room.name)}&theme=${currentTheme}`;
+                                item.className = 'search-result-item';
+                                item.innerHTML = `
+                                    <img src="${room.image_path}" alt="${room.name}">
+                                    <div>
+                                        <div class="fw-bold">${room.name}</div>
+                                        <div class="small" style="color: var(--current-text-light);">${room.category}</div>
+                                    </div>
+                                `;
+                                searchResults.appendChild(item);
+                            });
+                            searchResults.style.display = 'block';
+                        } else {
+                            searchResults.innerHTML = `
+                                <div class="p-3 text-center text-muted">
+                                    No rooms found matching "${query}"
+                                </div>
+                            `;
+                            searchResults.style.display = 'block';
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error fetching search results:', error);
+                    });
+            }, 300);
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+                searchResults.style.display = 'none';
+            }
         });
     }
 });
